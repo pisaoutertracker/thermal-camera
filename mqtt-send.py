@@ -1,6 +1,6 @@
 import time
+import struct
 import numpy as np
-import json
 import matplotlib.pyplot as plt
 import board
 import busio
@@ -21,11 +21,12 @@ while True:
     try:
         print("Getting values...")
         mlx.getFrame(buffer)
+        ba = bytearray(struct.pack("f" * len(buffer), *buffer))
         mqqttclient = mqtt.Client("thermalcam")
         mqqttclient.connect(broker, brokerport)
-        ret = mqqttclient.publish("/thermalcam", buffer.tolist())
+        ret = mqqttclient.publish("/thermalcamera/camera2/image", ba)
         print(ret)
-        time.sleep(1)
         print("Done")
+        time.sleep(10)
     except ValueError:
         continue

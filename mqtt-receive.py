@@ -6,8 +6,8 @@ import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import paho.mqtt.client as mqtt
 
-MQTT_SERVER = "pccmslab1"
-MQTT_PATH = "/thermalcam"
+MQTT_SERVER = "192.168.0.45"
+MQTT_PATH = "/thermalcamera/camera2/image"
 
 # Initialize a list of float as per your data. Below is a random example
 fig, ax = plt.subplots()
