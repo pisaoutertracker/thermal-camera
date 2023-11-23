@@ -57,11 +57,11 @@ class StartMonitoring(Resource):
             time.sleep(10)
 
 
-app.add_resource(ImportPosition, "/import-position")
-app.add_resource(GetFrameAtRelativeAngle, "/get-frame-relative")
-app.add_resource(GetFrameAtAbsoluteAngle, "/get-frame-absolute")
-app.add_resource(Calibrate, "/calibrate")
-app.add_resource(StartMonitoring, "/start-monitoring")
+api.add_resource(ImportPosition, "/import-position")
+api.add_resource(GetFrameAtRelativeAngle, "/get-frame-relative")
+api.add_resource(GetFrameAtAbsoluteAngle, "/get-frame-absolute")
+api.add_resource(Calibrate, "/calibrate")
+api.add_resource(StartMonitoring, "/start-monitoring")
 
 if __name__ == "__main__":
     app.run(debug=True)
