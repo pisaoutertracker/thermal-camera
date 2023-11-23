@@ -1,6 +1,6 @@
 import os
 import time
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
 from flask_restful import Resource, Api
 
 import paho.mqtt.client as mqtt
@@ -28,14 +28,18 @@ class GetFrameAtRelativeAngle(Resource):
     def get(self):
         args = request.get_json()
         thermal_camera.rotate(args["angle"])
-        return thermal_camera.get_frame_as_bytes(), 200
+        return Response(
+            thermal_camera.get_frame_as_bytes(), mimetype="application/octet-stream"
+        )
 
 
 class GetFrameAtAbsoluteAngle(Resource):
     def get(self):
         args = request.get_json()
         thermal_camera.go_to(args["position"])
-        return thermal_camera.get_frame_as_bytes(), 200
+        return Response(
+            thermal_camera.get_frame_as_bytes(), mimetype="application/octet-stream"
+        )
 
 
 class Calibrate(Resource):
@@ -46,15 +50,18 @@ class Calibrate(Resource):
 
 class StartMonitoring(Resource):
     def get(self):
-        while True:
-            print("Starting monitoring...")
-            mqqttclient = mqtt.Client("thermalcam")
-            mqqttclient.connect(broker, brokerport)
-            mqqttclient.publish(
-                "/thermalcamera/camera2/image", thermal_camera.get_frame_as_bytes()
-            )
-            print("Done.")
-            time.sleep(10)
+        try:
+            while True:
+                print("Starting monitoring...")
+                mqqttclient = mqtt.Client("thermalcam")
+                mqqttclient.connect(broker, brokerport)
+                mqqttclient.publish(
+                    "/thermalcamera/camera2/image", thermal_camera.get_frame_as_bytes()
+                )
+                print("Done.")
+                time.sleep(10)
+        except KeyboardInterrupt:
+            return {"status": "success"}, 200
 
 
 api.add_resource(ImportPosition, "/import-position")
