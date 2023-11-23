@@ -1,4 +1,5 @@
 """Thermal camera system basic operations."""
+import os
 import time
 import struct
 import board
@@ -26,8 +27,13 @@ class ThermalCamera:
         self.kit = MotorKit(i2c=board.I2C())
         # Absolute position of the stepper motor in degrees
         if absolute_position is None:
-            print("No absolute position given, using last position.")
-            self._absolute_position = self.import_absolute_position()
+            if os.path.exists("absolute_position.csv"):
+                print("No absolute position given, using last position.")
+                self.import_absolute_position()
+            else:
+                raise ValueError(
+                    "No absolute position given and no absolute position file found."
+                )
         else:
             self._absolute_position = absolute_position
 
@@ -87,7 +93,7 @@ class ThermalCamera:
         self.absolute_position = float(lines[-1].split(",")[1])
         print("Imported absolute position.")
 
-    def _calibrate(self):  # ! Still under development
+    def calibrate(self):  # ! Still under development
         """Calibrate the stepper motor."""
         print("Calibrating stepper motor...")
         # Set up the GPIO pins
