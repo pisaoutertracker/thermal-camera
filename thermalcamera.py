@@ -4,13 +4,10 @@ import time
 import struct
 import board
 import busio
-
 import numpy as np
-
 import adafruit_mlx90640
 from adafruit_motor import stepper
 from adafruit_motorkit import MotorKit
-
 import RPi.GPIO as GPIO
 
 
@@ -25,6 +22,7 @@ class ThermalCamera:
         self.mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_2_HZ
         # Stepper motor setup
         self.kit = MotorKit(i2c=board.I2C())
+        # TODO: pulse width customization
         # Absolute position of the stepper motor in degrees
         if absolute_position is None:
             if os.path.exists("absolute_position.csv"):
