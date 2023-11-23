@@ -18,7 +18,6 @@ class TestThermalCamera(unittest.TestCase):
         self.assertEqual(self.camera.absolute_position, 90)
 
     def test_go_to_method(self):
-        # Mock the rotate method to avoid physical movement
         self.camera.go_to(180)
         self.assertEqual(self.camera.absolute_position, 180)
 
