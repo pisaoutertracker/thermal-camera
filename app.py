@@ -50,8 +50,8 @@ class Calibrate(Resource):
 
 class StartMonitoring(Resource):
     def get(self):
-        try:
-            while True:
+        while True:
+            try:
                 print("Starting monitoring...")
                 mqqttclient = mqtt.Client("thermalcam")
                 mqqttclient.connect(broker, brokerport)
@@ -60,8 +60,8 @@ class StartMonitoring(Resource):
                 )
                 print("Done.")
                 time.sleep(10)
-        except KeyboardInterrupt:
-            return {"status": "success"}, 200
+            except KeyboardInterrupt:
+                return {"status": "success"}, 200
 
 
 api.add_resource(ImportPosition, "/import-position")
