@@ -154,11 +154,10 @@ class ThermalCamera:
             self.kit.stepper1.onestep(*args, **kwargs)
             # Update the absolute position considering the direction of rotation
             # ! Microstepping is not considered here
-            if "direction" in kwargs:
-                if kwargs["direction"] == stepper.BACKWARD:
-                    self.absolute_position = (self.absolute_position + 1.8 ) % 360
-                else:
-                    self.absolute_position = (self.absolute_position - 1.8 ) % 360
+            if "direction" in kwargs and kwargs["direction"] == stepper.BACKWARD:
+                self.absolute_position = (self.absolute_position - 1.8 ) % 360 # ? Is this correct?
+            else:
+                self.absolute_position = (self.absolute_position + 1.8 ) % 360
             # Check if the switch is pressed
             state = self.get_switch_state()
             if state and self.absolute_position != 0:
