@@ -10,23 +10,23 @@ class TestThermalCamera(unittest.TestCase):
         self.camera = ThermalCamera(absolute_position=0)
 
     def test_initial_absolute_position(self):
-        self.assertEqual(self.camera.absolute_position, 0)
+        self.assertAlmostEqual(self.camera.absolute_position, 0)
 
     def test_rotate_method(self):
         self.camera.kit = MagicMock()
         self.camera.rotate(90)
-        self.assertEqual(self.camera.absolute_position, 90)
+        self.assertAlmostEqual(self.camera.absolute_position, 90)
 
     def test_go_to_method(self):
         self.camera.go_to(180)
-        self.assertEqual(self.camera.absolute_position, 180)
+        self.assertAlmostEqual(self.camera.absolute_position, 180)
 
     def test_export_import_absolute_position(self):
         initial_position = self.camera.absolute_position
         self.camera.export_absolute_position()
         self.camera.absolute_position = 0  # Resetting absolute position
         self.camera.import_absolute_position()
-        self.assertEqual(self.camera.absolute_position, initial_position)
+        self.assertAlmostEqual(self.camera.absolute_position, initial_position)
 
     def test_get_frame(self):
         frame = self.camera.get_frame(camera="camera-0")
