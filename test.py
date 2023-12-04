@@ -29,21 +29,25 @@ class TestThermalCamera(unittest.TestCase):
         self.assertEqual(self.camera.absolute_position, initial_position)
 
     def test_get_frame(self):
-        frame = self.camera.get_frame()
+        frame = self.camera.get_frame(camera="camera-1")
         self.assertIsInstance(frame, type(np.array([])))
         self.assertEqual(len(frame), 24 * 32)
 
     def test_get_frame_as_bytes(self):
-        frame_bytes = self.camera.get_frame_as_bytes()
+        frame_bytes = self.camera.get_frame_as_bytes(camera="camera-1")
         self.assertIsInstance(frame_bytes, bytearray)
         # Calculate expected length based on the length of the frame (floats * 4 bytes)
         expected_length = 24 * 32 * 4
         self.assertEqual(len(frame_bytes), expected_length)
 
     def test_get_frame_as_image(self):
-        frame_image = self.camera.get_frame_as_image()
+        frame_image = self.camera.get_frame_as_image(camera="camera-1")
         self.assertIsInstance(frame_image, type(np.array([])))
         self.assertEqual(frame_image.shape, (24, 32))
+
+    def test_get_switch_state(self):
+        switch_state = self.camera.get_switch_state()
+        self.assertIsInstance(switch_state, bool)
 
 
 if __name__ == "__main__":
