@@ -40,8 +40,8 @@ class ThermalCamera:
     def __init__(self, absolute_position=None):
         # Thermal camera setup
         # ? Put the addresses in a config file
-        addresses = [0x33, 0x34, 0x35, 0x36]  # ! Update with the correct addresses
-        self.mlx_dict = {f"camera-{i}": adafruit_mlx90640.MLX90640(busio.I2C(board.SCL, board.SDA, frequency=int(1e6), address=addr)) for i, addr in enumerate(addresses)}
+        addresses = [0x33] # , 0x34, 0x35, 0x36]  # ! Update with the correct addresses
+        self.mlx_dict = {f"camera-{i}": adafruit_mlx90640.MLX90640(busio.I2C(board.SCL, board.SDA, frequency=int(1e6)), address=addr) for i, addr in enumerate(addresses)}
         for camera in self.mlx_dict.values():
             camera.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_2_HZ
         # Stepper motor setup
@@ -154,10 +154,11 @@ class ThermalCamera:
             self.kit.stepper1.onestep(*args, **kwargs)
             # Update the absolute position considering the direction of rotation
             # ! Microstepping is not considered here
-            if kwargs["direction"] == stepper.BACKWARD:
-                self.absolute_position = (self.absolute_position + 1.8 ) % 360
-            else:
-                self.absolute_position = (self.absolute_position - 1.8 ) % 360
+            if "direction" in kwargs:
+                if kwargs["direction"] == stepper.BACKWARD:
+                    self.absolute_position = (self.absolute_position + 1.8 ) % 360
+                else:
+                    self.absolute_position = (self.absolute_position - 1.8 ) % 360
             # Check if the switch is pressed
             state = self.get_switch_state()
             if state and self.absolute_position != 0:
