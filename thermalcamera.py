@@ -17,9 +17,10 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
+
 class ThermalCamera:
     """Class for the Thermal Camera system.
-    
+
     Parameters
     ----------
     absolute_position : float
@@ -40,8 +41,13 @@ class ThermalCamera:
     def __init__(self, absolute_position=None):
         # Thermal camera setup
         # ? Put the addresses in a config file
-        addresses = [0x33] # , 0x34, 0x35, 0x36]  # ! Update with the correct addresses
-        self.mlx_dict = {f"camera-{i}": adafruit_mlx90640.MLX90640(busio.I2C(board.SCL, board.SDA, frequency=int(1e6)), address=addr) for i, addr in enumerate(addresses)}
+        addresses = [0x33]  # , 0x34, 0x35, 0x36]  # ! Update with the correct addresses
+        self.mlx_dict = {
+            f"camera-{i}": adafruit_mlx90640.MLX90640(
+                busio.I2C(board.SCL, board.SDA, frequency=int(1e6)), address=addr
+            )
+            for i, addr in enumerate(addresses)
+        }
         for camera in self.mlx_dict.values():
             camera.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_2_HZ
         # Stepper motor setup
@@ -64,7 +70,6 @@ class ThermalCamera:
         GPIO.setmode(GPIO.BCM)
         self.pin = 23
         GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
 
     @property
     def absolute_position(self):
@@ -98,12 +103,12 @@ class ThermalCamera:
 
     def get_frame_as_bytes(self, camera):
         """Get a frame from the thermal camera as bytes.
-        
+
         Parameters
         ----------
         camera : str
             Name of the camera to get the frame from.
-            
+
         Returns
         -------
         buffer : bytearray
@@ -114,7 +119,7 @@ class ThermalCamera:
 
     def get_frame_as_image(self, camera):
         """Get a frame from the thermal camera as an image.
-        
+
         Parameters
         ----------
         camera : str
@@ -127,10 +132,24 @@ class ThermalCamera:
         """
         buffer = self.get_frame(camera=camera)
         return np.reshape(buffer, (24, 32))
-    
+
+    def show_frame(self, camera):
+        """Plot a frame from the thermal camera.
+
+        Parameters
+        ----------
+        camera : str
+            Name of the camera to get the frame from.
+        """
+        buffer = self.get_frame_as_image(camera=camera)
+        plt.figure(figsize=(10, 8))
+        plt.imshow(buffer, cmap="hot", interpolation="nearest")
+        plt.colorbar()
+        plt.show()
+
     def get_switch_state(self):
         """Get the state of the switch.
-        
+
         Returns
         -------
         state : bool
@@ -144,7 +163,7 @@ class ThermalCamera:
 
     def rotate(self, angle, *args, **kwargs):
         """Rotate the stepper motor by a given angle.
-        
+
         Parameters
         ----------
         angle : float
@@ -155,9 +174,11 @@ class ThermalCamera:
             # Update the absolute position considering the direction of rotation
             # ! Microstepping is not considered here
             if "direction" in kwargs and kwargs["direction"] == stepper.BACKWARD:
-                self.absolute_position = (self.absolute_position - 1.8 ) % 360 # ? Is this correct?
+                self.absolute_position = (
+                    self.absolute_position - 1.8
+                ) % 360  # ? Is this correct?
             else:
-                self.absolute_position = (self.absolute_position + 1.8 ) % 360
+                self.absolute_position = (self.absolute_position + 1.8) % 360
             # Check if the switch is pressed
             state = self.get_switch_state()
             if state and self.absolute_position != 0:
@@ -168,7 +189,7 @@ class ThermalCamera:
 
     def go_to(self, position, *args, **kwargs):
         """Go to a given position.
-        
+
         Parameters
         ----------
         position : float
@@ -197,7 +218,6 @@ class ThermalCamera:
             if self.get_switch_state():
                 self.absolute_position = 0
                 logging.info("Sensor found: absolute position set to 0 degrees.")
-                # GPIO.cleanup()
                 break
             else:
                 self.kit.stepper1.onestep(direction=stepper.BACKWARD)
