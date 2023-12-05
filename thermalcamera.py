@@ -163,7 +163,7 @@ class ThermalCamera:
             if state and self.absolute_position != 0:
                 logging.error("Sensor found but absolute position is not 0 degrees.")
                 raise ValueError
-            time.sleep(0.01)
+            # time.sleep(0.05)
         logging.info(f"Stepper motor rotated by {angle} degrees.")
 
     def go_to(self, position, *args, **kwargs):
@@ -197,7 +197,7 @@ class ThermalCamera:
             if self.get_switch_state():
                 self.absolute_position = 0
                 logging.info("Sensor found: absolute position set to 0 degrees.")
-                GPIO.cleanup()
+                # GPIO.cleanup()
                 break
             else:
                 self.kit.stepper1.onestep(direction=stepper.BACKWARD)
