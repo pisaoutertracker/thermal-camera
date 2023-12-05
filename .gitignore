@@ -161,3 +161,9 @@ cython_debug/
 
 # VSCode Workspace
 *.code-workspace
+
+# Python Envoironment
+p3/
+
+# Position
+absolute_position.csv
