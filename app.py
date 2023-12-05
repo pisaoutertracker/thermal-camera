@@ -29,7 +29,7 @@ class GetFrameAtRelativeAngle(Resource):
         args = request.get_json()
         thermal_camera.rotate(args["angle"])
         return Response(
-            thermal_camera.get_frame_as_bytes(), mimetype="application/octet-stream"
+            thermal_camera.get_frame_as_bytes("camera-0"), mimetype="application/octet-stream"
         )
 
 
@@ -38,7 +38,7 @@ class GetFrameAtAbsoluteAngle(Resource):
         args = request.get_json()
         thermal_camera.go_to(args["position"])
         return Response(
-            thermal_camera.get_frame_as_bytes(), mimetype="application/octet-stream"
+            thermal_camera.get_frame_as_bytes("camera-0"), mimetype="application/octet-stream"
         )
 
 
