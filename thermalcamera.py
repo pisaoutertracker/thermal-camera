@@ -6,6 +6,7 @@ import struct
 import board
 import busio
 import numpy as np
+from matplotlib import pyplot as plt
 import adafruit_mlx90640
 from adafruit_motor import stepper
 from adafruit_motorkit import MotorKit
@@ -146,6 +147,22 @@ class ThermalCamera:
         plt.imshow(buffer, cmap="hot", interpolation="nearest")
         plt.colorbar()
         plt.show()
+
+    def show_frame_loop(self, camera):
+        """Plot a frame from the thermal camera in a loop.
+
+        Parameters
+        ----------
+        camera : str
+            Name of the camera to get the frame from.
+        """
+        while True:
+            buffer = self.get_frame_as_image(camera=camera)
+            plt.figure(figsize=(10, 8))
+            plt.imshow(buffer, cmap="hot", interpolation="nearest")
+            plt.colorbar()
+            plt.show()
+            time.sleep(0.5)
 
     def get_switch_state(self):
         """Get the state of the switch.
