@@ -5,28 +5,29 @@ import matplotlib.pyplot as plt
 import board
 import busio
 import adafruit_mlx90640
+
 import paho.mqtt.client as mqtt
 
-# Thermal camera
-i2c = busio.I2C(board.SCL, board.SDA, frequency=int(1e6))
-mlx = adafruit_mlx90640.MLX90640(i2c)
-mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_2_HZ
-buffer = np.zeros((24 * 32,))
+from thermalcamera import ThermalCamera
 
 # MQTT
 broker = "192.168.0.45"
 brokerport = 1883
 
+thermal_camera = ThermalCamera()
+
 while True:
-    try:
-        print("Getting values...")
-        mlx.getFrame(buffer)
-        ba = bytearray(struct.pack("f" * len(buffer), *buffer))
-        mqqttclient = mqtt.Client("thermalcam")
-        mqqttclient.connect(broker, brokerport)
-        ret = mqqttclient.publish("/thermalcamera/camera2/image", ba)
-        print(ret)
-        print("Done")
-        time.sleep(10)
-    except ValueError:
-        continue
+    for i, camera in enumerate(thermal_camera.mlx_dict):
+        try:
+            b_array = thermal_camera.get_frame_as_bytes(camera)
+            mqqttclient = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1,"thermalcam")
+            mqqttclient.connect(broker, brokerport)
+            camera_name = camera.replace("-", "")
+            address = thermal_camera.addresses[i]
+            ret = mqqttclient.publish(f"/thermalcamera/{camera_name}/image/{address}", b_array)
+            # print(f"/thermalcamera/{camera_name}/image/{address}")
+            # print(ret)
+            # print("Done")
+            time.sleep(0.1)
+        except ValueError:
+            continue

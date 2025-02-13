@@ -1,4 +1,5 @@
 """Thermal camera system basic operations."""
+
 import os
 import time
 import logging
@@ -42,15 +43,20 @@ class ThermalCamera:
     def __init__(self, absolute_position=None):
         # Thermal camera setup
         # ? Put the addresses in a config file
-        addresses = [0x33]  # , 0x34, 0x35, 0x36]  # ! Update with the correct addresses
+        self._addresses = [
+            0x30,
+            0x31,
+            0x32,
+            0x33,
+        ]  # , 0x34, 0x35, 0x36]  # ! Update with the correct addresses
         self.mlx_dict = {
             f"camera-{i}": adafruit_mlx90640.MLX90640(
                 busio.I2C(board.SCL, board.SDA, frequency=int(1e6)), address=addr
             )
-            for i, addr in enumerate(addresses)
+            for i, addr in enumerate(self._addresses)
         }
         for camera in self.mlx_dict.values():
-            camera.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_2_HZ
+            camera.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_1_HZ
         # Stepper motor setup
         self.kit = MotorKit(i2c=board.I2C())
         # TODO: pulse width customization
@@ -71,6 +77,10 @@ class ThermalCamera:
         GPIO.setmode(GPIO.BCM)
         self.pin = 23
         GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+    @property
+    def addresses(self):
+        return self._addresses
 
     @property
     def absolute_position(self):
@@ -156,13 +166,18 @@ class ThermalCamera:
         camera : str
             Name of the camera to get the frame from.
         """
+        plt.ion()
+        fig, ax = plt.subplots(figsize=(10, 8))
+        buffer = self.get_frame_as_image(camera=camera)
+        therm = ax.imshow(buffer, cmap="hot", interpolation="nearest")
+        cbar = fig.colorbar(therm)
+        cbar.set_label("Temperature")
         while True:
             buffer = self.get_frame_as_image(camera=camera)
-            plt.figure(figsize=(10, 8))
-            plt.imshow(buffer, cmap="hot", interpolation="nearest")
-            plt.colorbar()
-            plt.show()
-            time.sleep(0.5)
+            therm.set_array(buffer)
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+            time.sleep(1)
 
     def get_switch_state(self):
         """Get the state of the switch.
