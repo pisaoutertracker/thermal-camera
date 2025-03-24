@@ -22,7 +22,7 @@ class ThermalCameraAPI:
     def __init__(self):
         self.thermal_camera = None
         self.command_handlers = {
-            "get_frame": self.show_frame,
+            "get_frame": self.get_frame,
             "get_switch_state": self.get_switch_state,
             "rotate": self.rotate,
             "go_to": self.go_to,
@@ -65,7 +65,8 @@ class ThermalCameraAPI:
                 pass
 
         def on_disconnect(client, userdata, rc):
-            self.thermal_camera.export_absolute_position()
+            if self.thermal_camera is not None:
+                self.thermal_camera.export_absolute_position()
             logging.error(f"Disconnected with result code {rc}")
 
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "thermalcam")
@@ -98,7 +99,7 @@ class ThermalCameraAPI:
         self.thermal_camera.import_absolute_position()
 
     def get_frame(self, client, payload):
-        frame = self.thermal_camera.get_framw_as_bytes(payload)
+        frame = self.thermal_camera.get_frame_as_bytes(payload)
         try:
             camera = payload.get("camera")
             camera_name = camera.replace("-", "")
