@@ -3,6 +3,7 @@ import json
 import logging
 import threading
 import paho.mqtt.client as mqtt
+import numpy as np
 
 from thermalcamera import ThermalCamera
 
@@ -38,6 +39,8 @@ class ThermalCameraAPI:
         }
         self.running = False
 
+        self.stitching_data = {}
+
     def publish_state(self, client):
         try:
             if self.thermal_camera is not None:
@@ -67,6 +70,9 @@ class ThermalCameraAPI:
         def on_disconnect(client, userdata, rc):
             if self.thermal_camera is not None:
                 self.thermal_camera.export_absolute_position()
+            if self.stitching_data:
+                with open("stitching_data.json", "w") as f:
+                    json.dump(self.stitching_data, f)
             logging.error(f"Disconnected with result code {rc}")
 
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "thermalcam")
@@ -105,7 +111,17 @@ class ThermalCameraAPI:
             camera_name = camera.replace("-", "")
             address = self.thermal_camera.addresses[self.thermal_camera.mlx_dict.index(camera)]
             client.publish(f"/thermalcamera/{camera_name}/image/{address}", frame)
-            client.publish(f"/thermalcamera/{camera_name}/position", self.thermal_camera.absolute_position)
+            client.publish(f"/thermalcamera/{camera_name}/position/{address}", self.thermal_camera.absolute_position)
+
+            # Tmp test for stitiching
+            if self.thermal_camera.absolute_position not in self.stitching_data:
+                self.stitching_data[self.thermal_camera.absolute_position] = {}
+                if camera_name not in self.stitching_data[self.thermal_camera.absolute_position]:
+                    self.stitching_data[self.thermal_camera.absolute_position][camera_name] = []
+
+            frame_image = np.flip(np.rot90(np.array(frame).reshape(24, 32)), axis=0).tolist()
+            self.stitching_data[self.thermal_camera.absolute_position][camera_name].append(frame_image)
+
         except ValueError:
             pass
 
