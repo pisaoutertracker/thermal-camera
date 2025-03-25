@@ -1,6 +1,7 @@
 import time
 import struct
 import json
+import base64
 import logging
 import threading
 import paho.mqtt.client as mqtt
@@ -46,7 +47,7 @@ class ThermalCameraAPI:
         self.stream_thread = None
 
         # Temporary code for creating a dataset for stitching
-        self.stitching_data = None
+        self.stitching_data = {}
 
     def publish_state(self, client):
         try:
@@ -99,7 +100,7 @@ class ThermalCameraAPI:
             param_default = spec.get("default", None)
             param_optional = spec.get("optional", False)
             try:
-                param_value = payload.get(param)
+                param_value = payload[param]
             except KeyError:
                 if param_optional:
                     param_value = param_default
@@ -161,22 +162,23 @@ class ThermalCameraAPI:
         }
         params = self.extract_params(payload, spec)
         camera = params["camera"]
+
+        enc_image = base64.b64encode(self.thermal_camera.get_frame_as_bytes(camera)).decode("utf-8")
         result = {
-            "image": self.thermal_camera.get_frame_as_bytes(camera),
+            "image": enc_image,
             "position": self.thermal_camera.absolute_position,
         }
 
         # Temporary code for creating a dataset for stitching
-        if self.stitching_data is not None:
-            position = result["position"]
-            image = result["image"]
-            image = [struct.unpack("f", image[i : i + 4])[0] for i in range(0, len(image), 4)]
-            image = np.flip(np.rot90(np.array(image).reshape(24, 32)), axis=0).tolist()
-            if position not in self.stitching_data:
-                self.stitching_data[position] = {}
-            if camera not in self.stitching_data[position]:
-                self.stitching_data[position][camera] = []
-            self.stitching_data[position][camera].append(image)
+        position = result["position"]
+        image = base64.b64decode(result["image"])
+        image = [struct.unpack("f", image[i : i + 4])[0] for i in range(0, len(image), 4)]
+        image = np.flip(np.rot90(np.array(image).reshape(24, 32)), axis=0).tolist()
+        if position not in self.stitching_data:
+            self.stitching_data[position] = {}
+        if camera not in self.stitching_data[position]:
+            self.stitching_data[position][camera] = []
+        self.stitching_data[position][camera].append(image)
 
         client.publish(f"{self.TOPIC_ROOT}/{camera}", json.dumps(result))
 
@@ -212,13 +214,20 @@ class ThermalCameraAPI:
         while True:
             if self.running is False:
                 logging.info("Stopping the run loop")
+                # Temporary code for creating a dataset for stitching
+                if self.stitching_data is not None:
+                    with open("stitching_data.json", "w") as f:
+                        json.dump(self.stitching_data, f)
                 break
-            if self.thermal_camera.get_switch_state() or (360 - self.thermal_camera.absolute_position) < 20:
-                logging.info("Switch state reached, inverting direction")
-                direction = "fw" if direction == "bw" else "bw"
+            if (
+                self.thermal_camera.get_switch_state() or (360 - self.thermal_camera.absolute_position) < 20
+            ):  # ! Check this
                 if continuous is False:
                     logging.info("Stopping the run loop")
+                    self.running = False
                     break
+                logging.info("Switch state reached, inverting direction")
+                direction = "fw" if direction == "bw" else "bw"
             self.thermal_camera.rotate(step, direction=direction)
             self.get_frames(client, payload)
             time.sleep(wait)
@@ -246,10 +255,6 @@ class ThermalCameraAPI:
         logging.info("Start monitoring state")
         while self.monitoring:
             self.publish_state(client)
-            # Temporary code for creating a dataset for stitching
-            if self.stitching_data is not None:
-                with open("stitching_data.json", "w") as f:
-                    json.dump(self.stitching_data, f)
             time.sleep(1)
 
     def monitor_state(self, client):
@@ -260,9 +265,14 @@ class ThermalCameraAPI:
         self.monitor_thread.start()
 
     def _send_images_loop(self, client):
-        while (self.running is False) and (self.thermal_camera is not None) and self.streaming:
-            self.get_frames(client, {})
-            time.sleep(0.1)
+        while self.streaming:
+            try:
+                if self.running:
+                    continue
+                else:
+                    self.get_frames(client, {})
+            except Exception:
+                pass
 
     def send_images(self, client):
         self.streaming = True

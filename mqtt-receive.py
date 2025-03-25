@@ -1,6 +1,7 @@
 import struct
 import numpy as np
 import json
+import base64
 
 # import cv2
 import matplotlib.pyplot as plt
@@ -9,7 +10,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import paho.mqtt.client as mqtt
 
 MQTT_SERVER = "192.168.0.45"
-MQTT_PATH = "/thermalcamera"
+MQTT_PATH = "/thermalcamera/#"
 
 # e.g. /thermalcamera/camera0/image, /thermalcamera/camera1/image, etc.
 
@@ -38,7 +39,7 @@ def on_message(client, userdata, msg):
     if msg.topic.startswith("/thermalcamera/camera"):
         # get the camera name
         camera_name = msg.topic.split("/")[2]
-        image = json.loads(msg.payload).get("image")
+        image = base64.b16decode(json.loads(msg.payload).get("image"))
         # get the image data
         flo_arr = [struct.unpack("f", image[i : i + 4])[0] for i in range(0, len(image), 4)]
         # update the image

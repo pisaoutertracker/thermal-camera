@@ -291,6 +291,7 @@ class ThermalCamera:
             else:
                 if steps >= total_steps:
                     logging.warning("Sensor not found within the prudence angle.")
+                    break
                 else:
                     self.kit.stepper1.onestep(direction=direction, style=self.STEP_STYLE)
                     self.absolute_position = update_pos_func(self.STEP_VALUE)
