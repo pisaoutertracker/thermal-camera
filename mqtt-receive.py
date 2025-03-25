@@ -1,5 +1,7 @@
 import struct
 import numpy as np
+import json
+
 # import cv2
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -7,7 +9,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import paho.mqtt.client as mqtt
 
 MQTT_SERVER = "192.168.0.45"
-MQTT_PATH = "/thermalcamera/+/image/#"
+MQTT_PATH = "/thermalcamera"
 
 # e.g. /thermalcamera/camera0/image, /thermalcamera/camera1/image, etc.
 
@@ -18,7 +20,6 @@ im_dict = {f"camera{i}": images[i] for i in range(4)}
 cbar = [make_axes_locatable(axs[i, j]).append_axes("right", size="5%", pad=0.05) for i in range(2) for j in range(2)]
 cbar = [fig.colorbar(images[i], cax=cbar[i]) for i in range(4)]
 titles = [axs[i, j].set_title(f"Camera {i*2+j}") for i in range(2) for j in range(2)]
-
 
 
 # # Initialize a list of float as per your data. Below is a random example
@@ -34,21 +35,20 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_message(client, userdata, msg):
-    # get the camera name
-    camera_name = msg.topic.split("/")[2]
-    # get the image data
-    flo_arr = [
-        struct.unpack("f", msg.payload[i : i + 4])[0]
-        for i in range(0, len(msg.payload), 4)
-    ]
-    # update the image
-    im_dict[camera_name].set_data(np.flip(np.rot90(np.array(flo_arr).reshape(24, 32)), axis=0))
-    im_dict[camera_name].set_clim(min(20, min(flo_arr)), max(flo_arr))
-    # update the colorbar
-#    cbar[int(camera_name[-1])].update_bruteforce(im_dict[camera_name])
-    # update the title
-    # titles[int(camera_name[-1])].set_text(f"Camera {camera_name[-1]}")
-    plt.draw()
+    if msg.topic.startswith("/thermalcamera/camera"):
+        # get the camera name
+        camera_name = msg.topic.split("/")[2]
+        image = json.loads(msg.payload).get("image")
+        # get the image data
+        flo_arr = [struct.unpack("f", image[i : i + 4])[0] for i in range(0, len(image), 4)]
+        # update the image
+        im_dict[camera_name].set_data(np.flip(np.rot90(np.array(flo_arr).reshape(24, 32)), axis=0))
+        im_dict[camera_name].set_clim(min(20, min(flo_arr)), max(flo_arr))
+        # update the colorbar
+        #    cbar[int(camera_name[-1])].update_bruteforce(im_dict[camera_name])
+        # update the title
+        # titles[int(camera_name[-1])].set_text(f"Camera {camera_name[-1]}")
+        plt.draw()
 
 
 # def on_message(client, userdata, msg):

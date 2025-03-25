@@ -52,7 +52,7 @@ class ThermalCamera:
             0x33,
         ]
         self.mlx_dict = {
-            f"camera-{i}": adafruit_mlx90640.MLX90640(busio.I2C(board.SCL, board.SDA, frequency=int(1e6)), address=addr)
+            f"camera{i}": adafruit_mlx90640.MLX90640(busio.I2C(board.SCL, board.SDA, frequency=int(1e6)), address=addr)
             for i, addr in enumerate(self._addresses)
         }
         for camera in self.mlx_dict.values():
@@ -75,6 +75,21 @@ class ThermalCamera:
         GPIO.setmode(GPIO.BCM)
         self.pin = 23
         GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+    def address(self, camera):
+        """Get the address of a thermal camera.
+
+        Parameters
+        ----------
+        camera : str
+            Name of the camera.
+
+        Returns
+        -------
+        address : int
+            Address of the camera.
+        """
+        return self._addresses[list(self.mlx_dict.keys()).index(camera)]
 
     @property
     def addresses(self):
@@ -191,7 +206,7 @@ class ThermalCamera:
         else:
             return False
 
-    def rotate(self, angle, *args, **kwargs):
+    def rotate(self, angle, direction="fw"):
         """Rotate the stepper motor by a given angle.
 
         Parameters
@@ -199,37 +214,28 @@ class ThermalCamera:
         angle : float
             Angle to rotate the stepper motor by.
         """
-        try:
-            direction = kwargs["direction"]
-            if direction not in ["forward", "backward"]:
-                logging.error("Direction must be either 'forward' or 'backward'.")
-                raise ValueError
-            if direction == "forward":
-                kwargs["direction"] = stepper.FORWARD
-            else:
-                kwargs["direction"] = stepper.BACKWARD
-        except KeyError:
-            logging.error("Direction not given.")
+        if direction not in ["fw", "bw"]:
+            logging.error("Direction must be either 'fw' or 'bw'.")
             raise ValueError
+        direction = stepper.FORWARD if direction == "fw" else stepper.BACKWARD
 
         # Round to the closest multiple of the step value
         nsteps = round(angle / self.STEP_VALUE)
         for _ in range(abs(nsteps)):
-            self.kit.stepper1.onestep(style=self.STEP_STYLE, *args, **kwargs)
+            self.kit.stepper1.onestep(style=self.STEP_STYLE, direction=direction)
             # Update the absolute position considering the direction of rotation
-            if "direction" in kwargs and kwargs["direction"] == stepper.BACKWARD:
+            if direction == stepper.BACKWARD:
                 self.absolute_position = (self.absolute_position - self.STEP_VALUE) % 360  # ? Is this correct?
             else:
                 self.absolute_position = (self.absolute_position + self.STEP_VALUE) % 360
             # Check if the switch is pressed
             state = self.get_switch_state()
-            if state and self.absolute_position != 0:
-                logging.error("Sensor found but absolute position is not 0 degrees.")
-                raise ValueError
+            if state:
+                logging.warning("Sensor found")
             time.sleep(0.01)
         logging.info(f"Stepper motor rotated by {angle} degrees.")
 
-    def go_to(self, position, *args, **kwargs):
+    def go_to(self, position):
         """Go to a given position.
 
         Parameters
@@ -237,7 +243,11 @@ class ThermalCamera:
         position : float
             Position to go to.
         """
-        self.rotate(position - self.absolute_position, *args, **kwargs)
+        if position >= self.absolute_position:
+            direction = "fw"
+        elif position < self.absolute_position:
+            direction = "bw"
+        self.rotate(abs(position - self.absolute_position), direction)
         logging.info(f"Stepper motor moved to {position} degrees.")
 
     def export_absolute_position(self):
@@ -253,7 +263,7 @@ class ThermalCamera:
         self.absolute_position = float(lines[-1].split(",")[1])
         logging.info("Imported absolute position.")
 
-    def calibrate(self, prudence=180, direction="backward"):
+    def calibrate(self, prudence=180, direction="bw"):
         """Calibrate the stepper motor.
 
         Parameters
@@ -263,11 +273,13 @@ class ThermalCamera:
         direction : str
             Direction to rotate the stepper motor.
         """
-        if direction not in ["forward", "backward"]:
-            logging.error("Direction must be either 'forward' or 'backward'.")
+        if direction not in ["fw", "bw"]:
+            logging.error("Direction must be either 'fw' or 'bw'.")
             raise ValueError
-        direction = stepper.FORWARD if direction == "forward" else stepper.BACKWARD
-
+        direction = stepper.FORWARD if direction == "fw" else stepper.BACKWARD
+        update_pos_func = lambda x: (
+            (self.absolute_position + x) % 360 if direction == stepper.FORWARD else (self.absolute_position - x) % 360
+        )
         logging.info("Starting calibration.")
         total_steps = round(prudence / self.STEP_VALUE)
         steps = 0
@@ -278,10 +290,10 @@ class ThermalCamera:
                 break
             else:
                 if steps >= total_steps:
-                    logging.error("Sensor not found within the prudence angle.")
-                    raise ValueError
+                    logging.warning("Sensor not found within the prudence angle.")
                 else:
                     self.kit.stepper1.onestep(direction=direction, style=self.STEP_STYLE)
+                    self.absolute_position = update_pos_func(self.STEP_VALUE)
                     steps += 1
                     time.sleep(0.01)
 
