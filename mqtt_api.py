@@ -127,7 +127,6 @@ class ThermalCameraAPI:
     def go_to(self, client, payload):
         spec = {
             "position": {"type": float},
-            "direction": {"type": str, "default": "fw", "optional": True},
         }
         params = self.extract_params(payload, spec)
         self.thermal_camera.go_to(**params)
