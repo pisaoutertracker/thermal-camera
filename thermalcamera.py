@@ -68,7 +68,7 @@ class ThermalCamera:
                 self.import_absolute_position()
             else:
                 logging.error("No absolute position given and no absolute position file found.")
-                raise ValueError
+                self._absolute_position = 0.0
         else:
             self._absolute_position = absolute_position
         # Set up the GPIO pins to read the switch
