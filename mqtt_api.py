@@ -179,6 +179,11 @@ class ThermalCameraAPI:
             self.stitching_data[position][camera] = []
         self.stitching_data[position][camera].append(image)
 
+        min_temp = float(np.min(image))
+        max_temp = float(np.max(image))
+        result["min_temperature"] = min_temp
+        result["max_temperature"] = max_temp
+
         client.publish(f"{self.TOPIC_ROOT}/{camera}", json.dumps(result))
 
     def get_frames(self, client, payload):
@@ -218,9 +223,7 @@ class ThermalCameraAPI:
                     with open("stitching_data.json", "w") as f:
                         json.dump(self.stitching_data, f)
                 break
-            if (
-                (self.thermal_camera.get_switch_state() and (((360 - self.thermal_camera.absolute_position) < 5) or (self.thermal_camera.absolute_postition < 5))) or ((360 - self.thermal_camera.absolute_position) < 20)
-            ):  # ! Check this
+            if (360 - self.thermal_camera.absolute_position) < 20:  # ! Check this
                 if continuous is False:
                     logging.info("Stopping the run loop")
                     self.running = False
