@@ -234,6 +234,7 @@ class ThermalCamera:
                 logging.warning("Sensor found")
             time.sleep(0.01)
         logging.info(f"Stepper motor rotated by {angle} degrees.")
+        self.export_absolute_position()
 
     def go_to(self, position):
         """Go to a given position.
@@ -248,6 +249,7 @@ class ThermalCamera:
         elif position < self.absolute_position:
             direction = "bw"
         self.rotate(abs(position - self.absolute_position), direction)
+        self.export_absolute_position()
         logging.info(f"Stepper motor moved to {position} degrees.")
 
     def export_absolute_position(self):
