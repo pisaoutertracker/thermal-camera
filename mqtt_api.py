@@ -45,6 +45,7 @@ class ThermalCameraAPI:
         self.run_thread = None
         self.monitor_thread = None
         self.stream_thread = None
+        self.client = None
 
         # Temporary code for creating a dataset for stitching
         self.stitching_data = {}
@@ -129,7 +130,9 @@ class ThermalCameraAPI:
             "position": {"type": float},
         }
         params = self.extract_params(payload, spec)
+        self.stop_monitor_stream_threads()
         self.thermal_camera.go_to(**params)
+        self.start_monitor_stream_threads(client)
 
     def calibrate(self, client, payload):
         spec = {
@@ -294,6 +297,19 @@ class ThermalCameraAPI:
         if self.run_thread and self.run_thread.is_alive():
             self.run_thread.join(timeout=5.0)
         logging.info("Threads stopped")
+
+    def stop_monitor_stream_threads(self):
+        self.monitoring = False
+        self.streaming = False
+        if self.monitor_thread and self.monitor_thread.is_alive():
+            self.monitor_thread.join(timeout=5.0)
+        if self.stream_thread and self.stream_thread.is_alive():
+            self.stream_thread.join(timeout=5.0)
+        logging.info("Monitoring and streaming threads stopped")
+
+    def start_monitor_stream_threads(self):
+        self.send_images(self.client)
+        self.monitor_state(self.client)
 
 
 if __name__ == "__main__":

@@ -40,8 +40,13 @@ class ThermalCamera:
         GPIO pin to read the switch.
     """
 
-    STEP_STYLE = stepper.INTERLEAVE
-    STEP_VALUE = 0.9 if STEP_STYLE == stepper.INTERLEAVE else 1.8
+    # Old values for the official adafruit software (not working)
+    # STEP_STYLE = stepper.INTERLEAVE
+    # STEP_VALUE = 0.9 if STEP_STYLE == stepper.INTERLEAVE else 1.8
+    # New values for the custom software
+    STEP_STYLE = stepper.MICROSTEP
+    STEP_VALUE = 0.18
+    STEP_TIME = 0.004
 
     def __init__(self, absolute_position=None):
         # Thermal camera setup
@@ -58,7 +63,7 @@ class ThermalCamera:
         for camera in self.mlx_dict.values():
             camera.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_1_HZ
         # Stepper motor setup
-        self.kit = MotorKit(i2c=board.I2C())
+        self.kit = MotorKit(i2c=board.I2C(), steppers_microsteps=10)
         # TODO: pulse width customization
         # Absolute position of the stepper motor in degrees
         # If no absolute position is given, try to import it from a file
@@ -107,6 +112,7 @@ class ThermalCamera:
             logging.error("Absolute position must be between 0 and 360 degrees.")
             raise ValueError
         self._absolute_position = value
+        self.export_absolute_position()
 
     def get_frame(self, camera):
         """Get a frame from the thermal camera.
@@ -225,14 +231,14 @@ class ThermalCamera:
             self.kit.stepper1.onestep(style=self.STEP_STYLE, direction=direction)
             # Update the absolute position considering the direction of rotation
             if direction == stepper.BACKWARD:
-                self.absolute_position = (self.absolute_position - self.STEP_VALUE) % 360  # ? Is this correct?
+                self.absolute_position = self.absolute_position - self.STEP_VALUE
             else:
-                self.absolute_position = (self.absolute_position + self.STEP_VALUE) % 360
+                self.absolute_position = self.absolute_position + self.STEP_VALUE
             # Check if the switch is pressed
-            state = self.get_switch_state()
-            if state:
-                logging.warning("Sensor found")
-            time.sleep(0.01)
+            # state = self.get_switch_state()
+            # if state:
+            # logging.warning("Sensor found")
+            time.sleep(self.STEP_TIME)
         logging.info(f"Stepper motor rotated by {angle} degrees.")
         self.export_absolute_position()
 
@@ -244,12 +250,17 @@ class ThermalCamera:
         position : float
             Position to go to.
         """
-        if position >= self.absolute_position:
-            direction = "fw"
-        elif position < self.absolute_position:
-            direction = "bw"
+        if position < 0 or position > 360:
+            if position < 0:
+                direction = "fw"
+            elif position > 360:
+                direction = "bw"
+        else:
+            if position >= self.absolute_position:
+                direction = "fw"
+            elif position < self.absolute_position:
+                direction = "bw"
         self.rotate(abs(position - self.absolute_position), direction)
-        self.export_absolute_position()
         logging.info(f"Stepper motor moved to {position} degrees.")
 
     def export_absolute_position(self):
