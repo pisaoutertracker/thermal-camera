@@ -108,9 +108,9 @@ class ThermalCamera:
     @absolute_position.setter
     def absolute_position(self, value):
         """Set the absolute position of the stepper motor."""
-        if value < 0 or value > 360:
-            logging.error("Absolute position must be between 0 and 360 degrees.")
-            raise ValueError
+        # if value < 0 or value > 360:
+            # logging.error("Absolute position must be between 0 and 360 degrees.")
+            # raise ValueError
         self._absolute_position = value
         self.export_absolute_position()
 
