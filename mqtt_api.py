@@ -130,9 +130,9 @@ class ThermalCameraAPI:
             "position": {"type": float},
         }
         params = self.extract_params(payload, spec)
-        self.stop_monitor_stream_threads()
+        # self.stop_monitor_stream_threads()
         self.thermal_camera.go_to(**params)
-        self.start_monitor_stream_threads(client)
+        # self.start_monitor_stream_threads()
 
     def calibrate(self, client, payload):
         spec = {
