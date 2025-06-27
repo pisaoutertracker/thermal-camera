@@ -226,7 +226,9 @@ class ThermalCameraAPI:
                     with open("stitching_data.json", "w") as f:
                         json.dump(self.stitching_data, f)
                 break
-            if (360 - self.thermal_camera.absolute_position) < 20:  # ! Check this
+            if ((380 - self.thermal_camera.absolute_position) < 20) or (
+                (-20 - self.thermal_camera.absolute_position) > -20
+            ):  # ! Partially verified
                 if continuous is False:
                     logging.info("Stopping the run loop")
                     self.running = False

@@ -250,16 +250,16 @@ class ThermalCamera:
         position : float
             Position to go to.
         """
-        if position < 0 or position > 360:
-            if position < 0:
-                direction = "fw"
-            elif position > 360:
-                direction = "bw"
-        else:
-            if position >= self.absolute_position:
-                direction = "fw"
-            elif position < self.absolute_position:
-                direction = "bw"
+        # if position < 0 or position > 360:
+        #     if position < 0:
+        #         direction = "fw"
+        #     elif position > 360:
+        #         direction = "bw"
+        
+        if position >= self.absolute_position:
+            direction = "fw"
+        elif position < self.absolute_position:
+            direction = "bw"
         self.rotate(abs(position - self.absolute_position), direction)
         logging.info(f"Stepper motor moved to {position} degrees.")
 
