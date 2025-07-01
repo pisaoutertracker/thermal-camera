@@ -184,8 +184,12 @@ class ThermalCameraAPI:
 
         min_temp = float(np.min(image))
         max_temp = float(np.max(image))
+        low_temp = float(np.percentile(image,0.05))
+        high_temp = float(np.percentile(image,0.95))
         result["min_temperature"] = min_temp
         result["max_temperature"] = max_temp
+        result["percentile05_temperature"] = low_temp
+        result["percentile95_temperature"] = high_temp
 
         client.publish(f"{self.TOPIC_ROOT}/{camera}", json.dumps(result))
 
@@ -217,6 +221,7 @@ class ThermalCameraAPI:
         wait = params["wait"]
         direction = params["direction"]
         continuous = params["continuous"]
+        print(offset)
         self.thermal_camera.go_to(offset)
         while True:
             if self.running is False:
@@ -226,15 +231,23 @@ class ThermalCameraAPI:
                     with open("stitching_data.json", "w") as f:
                         json.dump(self.stitching_data, f)
                 break
-            if ((380 - self.thermal_camera.absolute_position) < 20) or (
-                (-20 - self.thermal_camera.absolute_position) > -20
-            ):  # ! Partially verified
-                if continuous is False:
-                    logging.info("Stopping the run loop")
-                    self.running = False
-                    break
-                logging.info("Switch state reached, inverting direction")
-                direction = "fw" if direction == "bw" else "bw"
+            print("Pos ", self.thermal_camera.absolute_position)
+            if self.thermal_camera.absolute_position > 360 and direction == "fw" :
+                direction = "bw"
+            if self.thermal_camera.absolute_position < 0 and direction == "bw" :
+                direction = "fw"
+#           if ( ((380 - self.thermal_camera.absolute_position) < 20) or (
+ #              (-20 - self.thermal_camera.absolute_position) > -20
+#           ):  # ! Partially verified
+#           print("cond1 ", 380 - self.thermal_camera.absolute_position) 
+#           print("cond2 ", -20 - self.thermal_camera.absolute_position) 
+#               if continuous is False:
+#                   logging.info("Stopping the run loop")
+#                   self.running = False
+#                   break
+#               logging.info("Switch state reached, inverting direction")
+#               direction = "fw" if direction == "bw" else "bw"
+            print("current direction ", direction)
             self.thermal_camera.rotate(step, direction=direction)
             self.get_frames(client, payload)
             time.sleep(wait)
