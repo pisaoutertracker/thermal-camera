@@ -184,8 +184,8 @@ class ThermalCameraAPI:
 
         min_temp = float(np.min(image))
         max_temp = float(np.max(image))
-        low_temp = float(np.percentile(image,0.05))
-        high_temp = float(np.percentile(image,0.95))
+        low_temp = float(np.percentile(image,5))
+        high_temp = float(np.percentile(image,95))
         result["min_temperature"] = min_temp
         result["max_temperature"] = max_temp
         result["percentile05_temperature"] = low_temp
